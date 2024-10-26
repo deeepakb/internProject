@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale = 1.0">
+        <title>lmao</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                padding : 20px;
+            }
+            #chat {
+                border: 1px solid #ccc;
+                padding: 10px;
+                margin-bottom: 20px;
+                height: 300px;
+                overflow-y: scroll;
+            }
+            .user-message {
+                color: blue;
+                margin-bottom: 10px;
+            }
+            .assistant-message {
+                color: green;
+                margin-bottom: 10px;
+            }
+            input[type="text"] {
+                width: 300px;
+                padding: 10px;
+            }
+            button {
+                padding: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>asodjfaskjafkasjf</h1>
+        <div id="chat"></div>
+        <form id = "chat-form">
+            <input type="text" id="query" placeholder="Ask a question..." required>
+            <button type="submit">Send</button>
+        </form>
+
+        <script>
+            const form = document.getElementById('chat-form');
+            const chat = document.getElementById('chat');
+
+            form.addEventListener('submit', function(event){
+                event.preventDefault();
+
+                const userInput = document.getElementById('query').value;
+                displayMessage('user', userInput);
+
+                fetch('/chat', {
+                    method : 'POST',
+                    headers : {
+                        'Content-Type' : 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({query : userInput})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    displayMessage('assistant', data.response);
+                    document.getElementById('query').value = '';
+                })
+                .catch(error => {
+                    console.error('Error:' , error )
+                })
+            });
+
+            function displayMessage(role, content){
+                const message = document.createElement('div');
+                message.classList.add(role === 'user' ? 'user-message' : 'assistant-message');
+                message.textContent = (role === 'user' ? 'You: ' : '') + content;
+                chat.appendChild(message);
+                chat.scrollTop = chat.scrollHeight;
+            }
+        </script>
+    </body>
+</html>

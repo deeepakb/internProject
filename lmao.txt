@@ -1,0 +1,12 @@
+diff --git a/test/raff/burst/test_attach_burst_cluster.py b/test/raff/burst/test_attach_burst_cluster.py
+index 1016842e30..58279f5cce 100644
+--- a/test/raff/burst/test_attach_burst_cluster.py
++++ b/test/raff/burst/test_attach_burst_cluster.py
+@@ -10,7 +10,6 @@ from test_burst_mv_refresh import TestBurstWriteMVBase
+ log = logging.getLogger(__name__)
+ __all__ = [disable_all_autoworkers, super_simulated_mode, setup_teardown_burst]
+ 
+-
+ @pytest.mark.cluster_only
+ @pytest.mark.custom_burst_gucs(
+     gucs=dict(list(burst_write_basic_gucs.items()) + [(
