@@ -13,14 +13,48 @@ from llama_index.core.node_parser import CodeSplitter, SentenceSplitter
 import fnmatch
 import concurrent.futures
 
+file_type_to_language = {
+        ".cpp": "cpp",
+        ".hpp" : "cpp",
+        ".go": "go",
+        ".java": "java",
+        ".kt": "kotlin",
+        ".js": "js",
+        ".ts": "ts",
+        ".php": "php",
+        ".proto": "proto",
+        ".py": "python",
+        ".rst": "rst",
+        ".rb": "ruby",
+        ".rs": "rust",
+        ".scala": "scala",
+        ".swift": "swift",
+        ".md": "markdown",
+        ".tex": "latex",
+        ".html": "html",
+        ".sol": "sol",
+        ".cs": "csharp",
+        ".cob": "cobol",
+        ".c": "c",
+        ".lua": "lua",
+        ".pl": "perl",
+        ".hs": "haskell"
+    }
+
 def ingest():    
    s3 = boto3.client('s3')
    Settings.embed_model = HuggingFaceEmbedding()
    Settings.llm = None  
    reader = SimpleDirectoryReader(input_dir = "./cpp_Files", recursive = True)
-   code_splitter = CodeSplitter(language = "cpp" , chunk_lines= 2048)
    documents = reader.load_data()
-   nodes = code_splitter.get_nodes_from_documents(documents)
+   nodes = []
+
+   for doc in documents:
+      print(doc.metadata)
+      ___ , file_type = os.path.splitext(doc.metadata.get("file_path"))
+      file_type = file_type_to_language[file_type]
+      code_splitter = CodeSplitter(language = file_type , chunk_lines= 2048)
+      nodes.extend(code_splitter.get_nodes_from_documents([doc]))
   
   # Index Store
    index = VectorStoreIndex(nodes, show_progress=True)
