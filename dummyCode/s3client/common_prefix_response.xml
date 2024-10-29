@@ -1,0 +1,9 @@
+<ListBucketResult
+    xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+    <Name>dory-data</Name>
+    <Prefix>alldatatypes_csv/</Prefix>
+    <Marker></Marker>
+    <MaxKeys>1000</MaxKeys>
+    <IsTruncated>false</IsTruncated>
+    <CommonPrefixes><Prefix>jdJqyn8l/qa/701655/stl_aggr/cs/20191230/701655/raw/</Prefix><Prefix>jdJqyn8l/qa/701655/stl_aggr/main/20191231/701655/raw/</Prefix></CommonPrefixes>
+  </ListBucketResult>

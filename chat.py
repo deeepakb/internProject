@@ -14,8 +14,13 @@ from llama_index.core.retrievers import VectorIndexRetriever
 import argparse
 from diff import compare_folders
 from diffnew import diff_command
+from collections import deque
+
+
+conversation_history = deque(maxlen=20)  
 
 def chat(input_text):
+  conversation_history.clear()
   Settings.embed_model = HuggingFaceEmbedding()
   Settings.llm = None
   storage_context = StorageContext.from_defaults(persist_dir="./fromS3")
@@ -25,17 +30,20 @@ def chat(input_text):
     maximal_marginal_relevance=True,
     include_context=True,
 )
-  
+  print("Finished loading index from storage")
+
   response = retriever.retrieve(str_or_query_bundle = input_text)
+  conversation_history.append(input_text)
+  prompt = "\n".join(conversation_history)
 
   temp = ""
-  path = response[0].metadata.get('file_path')
+  path = response[0].metadata.get('file_path') 
 
   with open(path, 'r') as file:
      content = file.read()
      temp += content
 
-  prompt_info = "Keep the don't add unnecesary info, just give me the answer, no need for formalities"
+  prompt_info = "Don't add unnecesary info, just give me the answer, no need for formalities"
 
   kwargs = {
   "modelId": "anthropic.claude-3-5-sonnet-20241022-v2:0",
@@ -44,17 +52,17 @@ def chat(input_text):
   "body": json.dumps({
     "anthropic_version": "bedrock-2023-05-31",
     "max_tokens": 500,
-    "top_k": 5,
+    "top_k": 10,
     "stop_sequences": [],
-    "temperature": 0,
-    "top_p": 0.999,
+    "temperature": 0.1,
+    "top_p": 0.95,
     "messages": [
       {
         "role": "user",
         "content": [
           {
             "type": "text",
-            "text": input_text + " here is some relevant code" + temp + "heres some prompt info" + prompt_info
+            "text": prompt + " here is some relevant code" + temp + "heres some prompt info" + prompt_info
           }
         ]
       }
@@ -66,6 +74,7 @@ def chat(input_text):
   response2 = bedrock.invoke_model(
      **kwargs
   )
+   
   print("\n\n\n Response: " + json.loads(response2['body'].read())['content'][0]['text'])
   
 if __name__ == "__main__":

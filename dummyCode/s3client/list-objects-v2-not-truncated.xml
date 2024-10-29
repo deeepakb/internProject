@@ -1,0 +1,15 @@
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>dory-data</Name>
+  <Prefix>alldatatypes_parquet/</Prefix>
+  <KeyCount>1</KeyCount>
+  <MaxKeys>1000</MaxKeys>
+  <EncodingType>url</EncodingType>
+  <IsTruncated>false</IsTruncated>
+  <Contents>
+    <Key>alldatatypes_parquet/f9d1890f-9cd8-4ada-a902-2efabd3b3f26-000000</Key>
+    <LastModified>2017-03-27T04:34:24.000Z</LastModified>
+    <ETag>&quot;509864c48129fbb2df505fba7a2d6061&quot;</ETag>
+    <Size>106258</Size>
+    <StorageClass>STANDARD</StorageClass>
+  </Contents>
+</ListBucketResult>

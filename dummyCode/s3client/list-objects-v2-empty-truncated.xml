@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>odp-us-prod-purpose</Name>
+  <Prefix>services/mdp/ingestion/batchrsdata/CT_SWP/ct_lbt_jl_capgen_dtl</Prefix>
+  <NextContinuationToken>1mox99+1lDN20aYeT9zszfAHvvGXp1XSWooZ2Q1NvtKaeAEmpo7BzrLTBJl606wZcpKbw/8HGWDW4lYJRqXZMf9ZrgRm8TJ/bQazlZMWZ5sIuQRMl7xPIXwOhAJwOfSeLGP0CG5D39igyC8HOCYLOuVpPLe8yprAddbGIgG+APcoaxqEnLJIyme3XHkqWlCcl8T/9n9hQ8MtlZJIs3/94gRxMGrJTvCnSh5RXSPmbrtQ=</NextContinuationToken>
+  <KeyCount>0</KeyCount>
+  <MaxKeys>1000</MaxKeys>
+  <EncodingType>url</EncodingType>
+  <IsTruncated>true</IsTruncated>
+</ListBucketResult>

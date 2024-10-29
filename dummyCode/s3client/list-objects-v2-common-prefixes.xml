@@ -1,0 +1,17 @@
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>versioned-test-bucket-dp</Name>
+  <Prefix>stls/over_1000/</Prefix>
+  <KeyCount>2</KeyCount>
+  <MaxKeys>1000</MaxKeys>
+  <Delimiter>stl_compile_info/</Delimiter>
+  <EncodingType>url</EncodingType>
+  <IsTruncated>false</IsTruncated>
+  <Contents>
+    <Key>stls/over_1000/</Key>
+    <LastModified>2018-12-12T21:29:05.000Z</LastModified>
+    <ETag>&quot;d41d8cd98f00b204e9800998ecf8427e&quot;</ETag>
+    <Size>0</Size>
+    <StorageClass>STANDARD</StorageClass>
+  </Contents>
+  <CommonPrefixes><Prefix>stls/over_1000/stl_compile_info/</Prefix></CommonPrefixes>
+</ListBucketResult>
