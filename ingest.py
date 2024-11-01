@@ -87,13 +87,13 @@ def process_single_document(doc, no_of_batches):
             return []
 
         if file_type == "text":
-            text_splitter = SentenceSplitter(chunk_size=32768, chunk_overlap=0)
+            text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=0)
             logger.info(f"Processed as Text")
             print(len(text_splitter.get_nodes_from_documents([doc])))
             return text_splitter.get_nodes_from_documents([doc])
         else:   
             logger.info(f"Processed as Code")
-            code_splitter = CodeSplitter(language=file_type, chunk_lines=32768)
+            code_splitter = CodeSplitter(language=file_type, chunk_lines=512)
             print(len(code_splitter.get_nodes_from_documents([doc])))
             return code_splitter.get_nodes_from_documents([doc])
     except Exception as e:

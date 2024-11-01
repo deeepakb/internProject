@@ -16,40 +16,38 @@ from diff import compare_folders
 from diffnew import diff_command
 from collections import deque
 
-conversation_history = deque(maxlen=20)  
 
 def chat(input_text):
     start_time = time.time()
-    conversation_history.clear()
     Settings.embed_model = HuggingFaceEmbedding()
     Settings.llm = None
+    storage_context_time = time.time()
     storage_context = StorageContext.from_defaults(persist_dir="./indexStorage")
-    index = load_index_from_storage(storage_context)
+    print("Got storage context")
+    index = load_index_from_storage(storage_context, mmap=True)
+
+    print("Finished Loading Vector Store")
 
     retriever = VectorIndexRetriever(index=index, retrieval_mode="default", 
         maximal_marginal_relevance=True,
         include_context=True,
+        similarity_top_k = 20,
+        verbose = True,
     )
 
-    print("Finished loading index from storage")
+    print("Finished making Retriever")
 
     response = retriever.retrieve(str_or_query_bundle = input_text)
-    conversation_history.append(input_text)
-    prompt = "\n".join(conversation_history)
-    temp = ""
     
-    # Get the file path from the first retrieved document
-    target_path = response[0].metadata.get('file_path')
-    
-    # Retrieve all documents with the same file path
-    matching_docs = [doc for doc in index.docstore.docs.values() if doc.metadata.get('file_path') == target_path]
-    
-    # Combine content from all matching documents
-    for doc in matching_docs:
-        temp += doc.text + "\n\n"
+    code_snippets = ""
+    i = 0
+    for node in response:
+        i+=1
+        code_snippets += f"\n\n Snippet {i} : {node.text}"
+        print(node)
 
     with open("/home/deeepakb/Projects/bedrockTest/reconstructed_document.txt", "w") as f:
-        f.write(temp)
+        f.write(code_snippets)
 
     prompt_info = "Don't add unnecessary info, just give me the answer, no need for formalities"
 
@@ -70,21 +68,25 @@ def chat(input_text):
                     "content": [
                         {
                             "type": "text",
-                            "text": prompt + " here is some relevant code" + temp + "heres some prompt info" + prompt_info
+                            "text": input_text + "\n\n here is some relevant code snippets" + code_snippets + "\n\nheres some prompt info" + prompt_info
                         }
                     ]
                 }
             ]
         })
     }
+    end_time = time.time()  # End timing
+    elapsed_time = end_time - start_time
+    print(f"\nTotal processing time: {elapsed_time:.2f} seconds")
 
+    """
     bedrock = boto3.client('bedrock-runtime')
     response2 = bedrock.invoke_model(**kwargs)
    
     print("\n\n\n Response: " + json.loads(response2['body'].read())['content'][0]['text'])
     end_time = time.time()  # End timing
     elapsed_time = end_time - start_time
-    print(f"\nTotal processing time: {elapsed_time:.2f} seconds")
+    print(f"\nTotal processing time: {elapsed_time:.2f} seconds")"""
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CLI for LLM")
