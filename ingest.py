@@ -64,6 +64,10 @@ file_type_to_language = {
     ".dump" : "text",
     ".h" : "text",
     ".po" : "text",
+    ".template" : "text",
+    ".cmake" : "text", 
+    ".cfg" : "text",
+    "" : "text"
 }
 
 def file_size_is_within_limit(file_path, max_size=10 * 1024 * 1024):  # 10 MB in bytes
@@ -115,6 +119,7 @@ def ingest():
     reader = SimpleDirectoryReader(input_dir="/home/deeepakb/redshift-padb", recursive=True)
     documents = reader.load_data()
     chunk_size = 25000  # Adjust the batch size as needed
+    documents = documents[:2000]
     total_docs = len(documents)
     processed_docs = 0
     skip_count = 0
@@ -163,7 +168,7 @@ def ingest():
     logger.info(f"Finished with skipped: {skip_count}, and not skipped: {not_skip_count}")
     # Index Store Faiss/Pinecone
     index = VectorStoreIndex(list(nodes), show_progress=True)
-    index.storage_context.persist(persist_dir="/home/deeepakb/Projects/bedrockTest/indexStorage")
+    index.storage_context.persist(persist_dir="/home/deeepakb/Projects/bedrockTest/tempIndexStorage")
     storage_context = StorageContext.from_defaults(persist_dir="/home/deeepakb/Projects/bedrockTest/indexStorage")
 
     for root, dirs, files in os.walk('./home/deeepakb/Projects/bedrockTest/tempIndexStorage'):
@@ -173,7 +178,7 @@ def ingest():
     objects = s3.list_objects_v2(Bucket='holdingvectorstore')
     for obj in objects['Contents']:
         s3_key = obj['Key']
-        s3.download_file('holdingvectorstore', s3_key, f'./fromS3/{os.path.basename(s3_key)}')
+        s3.download_file('holdingvectorstore', s3_key, f'./tempFromS3/{os.path.basename(s3_key)}')
     logger.info("Finished Download")   
 
 

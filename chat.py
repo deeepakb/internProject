@@ -12,8 +12,6 @@ import fnmatch
 import concurrent.futures
 from llama_index.core.retrievers import VectorIndexRetriever
 import argparse
-from diff import compare_folders
-from diffnew import diff_command
 from collections import deque
 
 
@@ -26,8 +24,11 @@ def chat(input_text):
     print("Got storage context")
     index = load_index_from_storage(storage_context, mmap=True)
 
-    print("Finished Loading Vector Store")
+    print("Finished Loading Vector Store\n")
+    time_to_read_storage = time.time() - storage_context_time
+    print(f"Took {time_to_read_storage} to load storage")
 
+    time_to_search_index = time.time()
     retriever = VectorIndexRetriever(index=index, retrieval_mode="default", 
         maximal_marginal_relevance=True,
         include_context=True,
@@ -38,7 +39,7 @@ def chat(input_text):
     print("Finished making Retriever")
 
     response = retriever.retrieve(str_or_query_bundle = input_text)
-    
+    print(f"Time to query model is {time.time() - time_to_search_index} \n")
     code_snippets = ""
     i = 0
     for node in response:
@@ -95,7 +96,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     if args.diff:
-        diff_command()
+        print("ok")
     else:
         input_text = ' '.join(args.input)
         chat(input_text)
