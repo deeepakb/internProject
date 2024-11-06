@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        #chat-container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            height: 400px;
+            overflow-y: scroll;
+        }
+        #user-input {
+            width: 80%;
+            margin: 20px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container"></div>
+    <input type="text" id="user-input" placeholder="Type your message here...">
+
+    <script>
+        $(document).ready(function() {
+            $('#user-input').keypress(function(e) {
+                if (e.which == 13) {  // Enter key
+                    var userMessage = $(this).val();
+                    if (userMessage) {
+                        $('#chat-container').append('<p><strong>You:</strong> ' + userMessage + '</p>');
+                        $(this).val('');
+                        
+                        $.ajax({
+                            url: '/chat',
+                            method: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({message: userMessage}),
+                            success: function(response) {
+                                $('#chat-container').append('<p><strong>AI:</strong> ' + response.message + '</p>');
+                                $('#chat-container').scrollTop($('#chat-container')[0].scrollHeight);
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

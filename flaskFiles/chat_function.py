@@ -24,9 +24,8 @@ def safe_int(value):
         return float('inf')  
 
 
-def chat():
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2", model_kwargs={'device': "cpu"},
-                                                 encode_kwargs={"batch_size": 16384})
+def chat_function(query, conversation_history):
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
     index_path = "/home/deeepakb/Projects/bedrockTest/faiss_index_final"
 
     try:
@@ -35,20 +34,14 @@ def chat():
         logger.info(f"FAISS index loaded successfully, it took {time.time() - index_start_time} Seconds")
     except Exception as e:
         logger.error(f"Error loading FAISS index: {e}")
-        return
-
-    query = "Can you explain the arcadia_test_utils function of the AwsClientMgrDefaultGUCs?"
+        return "Sorry, I encountered an error while loading the index."
 
     search_start_time = time.time()
-    results = vector_store.max_marginal_relevance_search(query, k=100, fetch_k = 40000, lambda_mult = 0.99)
-
-
+    results = vector_store.max_marginal_relevance_search(query, k=25, fetch_k=50)
 
     if not results:
         logger.info("No results found for the query.")
-        return
-    else:
-        logger.info(f"\nIt took {time.time() - search_start_time} seconds to search the index")
+        return "I couldn't find any relevant information for your query."
 
     logger.info(f"\nTime to find Chunks is {time.time() - search_start_time} \n")
     file_groups = defaultdict(list)
@@ -91,9 +84,8 @@ def chat():
 
 
 
-    kwargs = {
-         #"modelId": "anthropic.claude-3-5-sonnet-20241022-v2:0",
-       "modelId": "anthropic.claude-3-sonnet-20240229-v1:0",
+        kwargs = {
+        "modelId": "anthropic.claude-3-5-sonnet-20241022-v2:0",
         "contentType": "application/json",
         "accept": "application/json",
         "body": json.dumps({
@@ -103,7 +95,7 @@ def chat():
             "stop_sequences": [],
             "temperature": 0.1,
             "top_p": 0.95,
-            "messages": [
+            "messages": conversation_history + [
                 {
                     "role": "user",
                     "content": [
@@ -119,10 +111,11 @@ def chat():
 
     bedrock = boto3.client('bedrock-runtime')
     bedrock_response_time = time.time()
-    """
     response2 = bedrock.invoke_model(**kwargs)
     logger.info(f"\nIt took {time.time() - bedrock_response_time } seconds for the model to respond")
-    print("\n\n\n Response: " + json.loads(response2['body'].read())['content'][0]['text'])
-    """
-if __name__ == "__main__":
-    chat()
+    
+    response_content = json.loads(response2['body'].read())['content'][0]['text']
+    return response_content
+
+
+    
