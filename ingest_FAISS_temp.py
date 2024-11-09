@@ -47,20 +47,20 @@ sys.stdout.reconfigure(line_buffering=True)
 file_type_to_language = {
     ".cpp": "cpp", ".hpp": "cpp", ".go": "go", ".sql": "text", ".java": "java",
     ".json": "json", ".kt": "kotlin", ".ts": "ts", ".php": "php", ".py": "python",
-    ".rst": "rst", ".sh": "text", ".rb": "ruby", ".xml": "text",
-    ".rs": "rust", ".scala": "scala", ".swift": "swift",
-    ".md": "markdown", ".tex": "latex",
-    ".c": "c", ".csv": "text", ".pl": "perl", ".cs": "c-sharp",
+    ".rst": "rst", ".sh": "text", ".rb": "ruby", ".xml": "text", ".proto": "text",
+    ".rs": "rust", ".scala": "scala", ".yaml": "yaml", ".swift": "swift",
+    ".md": "markdown", ".tex": "latex", ".sol": "sol", ".cob": "cobol",
+    ".c": "c", ".csv": "text", ".lua": "lua", ".pl": "perl", ".cs": "c-sharp",
     ".hs": "haskell", ".html": "text", ".orig": "text", ".txt": "text",
-    ".mk": "text", ".res": "text",
-    ".data": "text", ".component": "text", ".h": "cpp",
-    ".template" : "text"
+    ".mk": "text", ".res": "text", ".ldf": "text", ".conf": "text",
+    ".data": "text", ".component": "text", ".dump": "text", ".h": "text",
+    ".po": "text", ".template" : "text", ".cmake" : "text"
 }
 
-def file_size_is_within_limit(file_path, max_size=12 * 1024 * 1024):  # 8 MB in bytes
+def file_size_is_within_limit(file_path, max_size=10 * 1024 * 1024):  # 8 MB in bytes
     return os.path.getsize(file_path) <= max_size
 
-# Update your process_single_document functionm
+# Update your process_single_document function
 def process_single_document(doc, no_of_batches):
     try:
         file_path = doc.metadata.get("file_path")
@@ -81,24 +81,15 @@ def process_single_document(doc, no_of_batches):
             text_splitter = RecursiveCharacterTextSplitter.from_language(
                 language=language, chunk_size=2048, chunk_overlap=100
             )
-            
-        elif file_type is not None:
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=2048, chunk_overlap=100)
         else:
-            with open("/home/deeepakb/Projects/bedrockTest/log.txt", "a") as f:
-                f.write(f"Skipping Unknown file: {file_path}\n")
-
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=2048, chunk_overlap=100)
 
         # Split document and add file name to each chunk's content
         content = doc.get_content()
         chunks = text_splitter.split_text(content)
-        
-        with open("/home/deeepakb/Projects/bedrockTest/log.txt", "a") as f:
-                f.write(f"File Exists: {file_path}")
-
         return [
             {
-                "text": f"File Path: {file_path}\n\n{chunk}",
+                "text": f"File Name: {file_name}\n\n{chunk}",
                 "metadata": {"file_path": file_path}
             } for chunk in chunks
         ]
@@ -120,7 +111,7 @@ def ingest():
                                                  encode_kwargs={"batch_size": 16384})
     Settings.llm = None
 
-    reader = SimpleDirectoryReader(input_dir="/home/deeepakb/redshift-padb", recursive=True)
+    reader = SimpleDirectoryReader(input_dir="/home/deeepakb/redshift-padb/test/raff/mv", recursive=False)
     documents = reader.load_data()
     chunk_size = 25000
     total_docs = len(documents)
@@ -201,7 +192,7 @@ def ingest():
 
     end_time = time.time()
     logger.info(f"Time taken to add all texts: {end_time - start_time} seconds")
-    vector_store.save_local("/home/deeepakb/Projects/bedrockTest/faiss_index_final")
+    vector_store.save_local("/home/deeepakb/Projects/bedrockTest/faiss_index_temp")
 
 if __name__ == "__main__":
     try:
