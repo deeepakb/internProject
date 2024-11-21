@@ -8,9 +8,74 @@ from collections import defaultdict
 import json
 import boto3
 import time
+import random
+import math
 
+# Logging setuppy
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
+
+# MCTS Node class
+class MCTSNode:
+    def __init__(self, parent=None, query=None, current_text=None):
+        self.parent = parent
+        self.query = query
+        self.current_text = current_text  # Store the current_text as part of the node
+        self.children = []
+        self.visits = 0
+        self.value = 0
+        self.is_fully_expanded = False
+
+    def add_child(self, child_node):
+        self.children.append(child_node)
+
+    def best_child(self):
+        if self.children:
+            return max(self.children, key=lambda child: child.value / (child.visits + 1))
+        return self
+
+    def select(self, exploration_weight=1.0):
+        if not self.is_fully_expanded:
+            return self
+        return max(self.children, key=lambda child: (child.value / (child.visits + 1)) + exploration_weight * math.sqrt(math.log(self.visits + 1) / (child.visits + 1)))
+
+
+# MCTS class to perform tree search
+class MCTS:
+    def __init__(self, root: MCTSNode, vector_store, conversation_history, iterations=3):
+        self.root = root
+        self.vector_store = vector_store
+        self.conversation_history = conversation_history
+        self.iterations = iterations
+
+    def search(self, exploration_weight=1.0):
+        current_text = self.root.current_text  # Start with the initial current_text
+
+        for _ in range(self.iterations):
+            node = self.root
+            while node.is_fully_expanded:
+                node = node.select(exploration_weight)
+
+            query = node.query if node.query else "What does stability.sql file do?"
+            response = recursive_rag(query, self.vector_store, self.conversation_history, 1)
+            
+            # Create a new node with the response text as the current_text
+            new_node = MCTSNode(parent=node, query=response, current_text=response)
+            node.add_child(new_node)
+            node = new_node
+            node.visits += 1
+            node.value += self.evaluate_node(node)
+
+            # Update current_text if the response has a better reward
+            if self.evaluate_node(new_node) > self.evaluate_node(node):
+                current_text = new_node.current_text
+
+        return current_text
+
+    def evaluate_node(self, node):
+        # Dummy evaluation function: can be improved to assess quality
+        return random.random()
+
 
 def normalize_path(path):
     return os.path.normpath(os.path.expanduser(path))
@@ -19,7 +84,7 @@ def safe_int(value):
     try:
         return int(value)
     except ValueError:
-        return float('inf')  
+        return float('inf')
 
 def load_conversation_history():
     try:
@@ -67,12 +132,6 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
 
     full_content = ""
     for chunk in sorted_deduplicated_chunks:
-        #ignore
-        #if chunk.metadata.get("file_path") == "/home/deeepakb/redshift-padb/test/cppunit/omnisql/omnisql_vars_generator_test.cpp":
-            #continue
-        #if "TestRegression" in chunk.page_content:
-            #continue
-
         full_content += f"File: {os.path.basename(chunk.metadata.get('file_path', 'Unknown'))}\n"
         full_content += f"Chunk ID : {chunk.metadata.values}\n"
         full_content += chunk.page_content.strip() + "\n\n"
@@ -83,7 +142,7 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
         f.write(full_content)
         f.write("\n")
 
-        prompt_info = "Keep your answer short and precise. Also when asked to generate code, give ONLY the code, nothing else, if you're unsure or lack confidence in your answer, do not give the code, and state why."
+    prompt_info = "Keep your answer short and precise. Also when asked to generate code, give ONLY the code, nothing else, if you're unsure or lack confidence in your answer, do not give the code, and state why."
     messages = conversation_history + [
         {
             "role": "user",
@@ -95,7 +154,6 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
             ]
         }
     ]
-
 
     kwargs = {
         "modelId": "anthropic.claude-3-5-sonnet-20241022-v2:0",
@@ -129,8 +187,6 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
 
     return next_response if next_response is not None else response_content
 
-
-
 def chat():
     conversation_history = load_conversation_history()
 
@@ -149,11 +205,16 @@ def chat():
         logger.error(f"Error loading FAISS index: {e}")
         return
 
+    query = """What does def test_alter_add_encode_col do?""" + " ".join(map(str, conversation_history)) 
 
-    query = """What does stability.sql file do?""" + " ".join(map(str, conversation_history)) 
+    # Initialize MCTS
+    root_node = MCTSNode(query=query, current_text=None)
+    mcts = MCTS(root_node, vector_store, conversation_history, iterations=5)
+    improved_query = mcts.search()
 
-    response = recursive_rag(query, vector_store, conversation_history, 5, query)
-    #results = vector_store.max_marginal_relevance_search(query, k=150, fetch_k = 150000, lambda_mult = 0.75)
+    # Pass the improved query to the recursive RAG
+    response = recursive_rag(improved_query, vector_store, conversation_history, 3, query)
+    
     print(response)
     print(f"\n It took {time.time() - index_start_time} to run the whole program")
 
