@@ -68,10 +68,10 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
     full_content = ""
     for chunk in sorted_deduplicated_chunks:
         #ignore
-        #if chunk.metadata.get("file_path") == "/home/deeepakb/redshift-padb/test/cppunit/omnisql/omnisql_vars_generator_test.cpp":
+        #if chunk.metadata.get("file_path") == "/home/deeepakb/redshift-padb/test/raff/ddm/testfiles/lf_alp/test_lf_alp_explain_hidden.sql":
             #continue
-        #if "TestRegression" in chunk.page_content:
-            #continue
+        if "class TestAttachBurstCluster" in chunk.page_content:
+            continue
 
         full_content += f"File: {os.path.basename(chunk.metadata.get('file_path', 'Unknown'))}\n"
         full_content += f"Chunk ID : {chunk.metadata.values}\n"
@@ -83,7 +83,7 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
         f.write(full_content)
         f.write("\n")
 
-        prompt_info = "Keep your answer short and precise. Also when asked to generate code, give ONLY the code, nothing else, if you're unsure or lack confidence in your answer, do not give the code, and state why."
+        prompt_info = "Keep your answer short and precise. Also when asked to generate code, give ONLY the code, nothing else. Furthermore, conversation history is being added to the message so you can see previous answers and iterate and improve on the code, Please try your best to improve the code on each iteration, if you cant improve it any more just give the code."
     messages = conversation_history + [
         {
             "role": "user",
@@ -106,7 +106,7 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
             "max_tokens": 550,
             "top_k": 10,
             "stop_sequences": [],
-            "temperature": 0.1,
+            "temperature": 0.3,
             "top_p": 0.95,
             "messages": messages
         })
@@ -137,9 +137,10 @@ def chat():
     with open("/home/deeepakb/Projects/bedrockTest/reconstructed_document_FAISS.txt", "w") as f:
         f.write("")
 
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2", model_kwargs={'device': "cpu"},
-                                                 encode_kwargs={"batch_size": 16384})
-    index_path = "/home/deeepakb/Projects/bedrockTest/faiss_index_final"
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2",
+                                       model_kwargs={'device': "cpu"},
+                                       encode_kwargs={"batch_size": 131072})
+    index_path = "/home/deeepakb/Projects/bedrockTest/faiss_index_final_improved"
 
     try:
         index_start_time = time.time()
@@ -150,7 +151,7 @@ def chat():
         return
 
 
-    query = """What does stability.sql file do?""" + " ".join(map(str, conversation_history)) 
+    query = """Based on this description, generate the python code for class TestAttachBurstCluster , there should nly be 3 functions in it: TestAttachBurstCluster is a test class that verifies burst cluster attachment functionality in Amazon Redshift. Here's a precise explanation:Key Components:1. Test Methods:- test_attach_burst_cluster: Verifies successful burst cluster attachment and checks cluster count- test_backup_main_cluster: Tests backup functionality while burst cluster is attached - test_detach_burst_cluster: Validates proper burst cluster detachment and cleanup2. Helper Functions:- get_burst_clusters_arns(): Gets ARNs of attached burst clusters- is_burst_cluster_fresh(): Checks if burst cluster is up-to-date- release_all_burst_clusters(): Detaches all burst clusters3. Implementation:- Inherits from TestBurstWriteMVBase- Uses cluster_arns to track attached clusters- Validates cluster state after operations- Ensures proper cleanup after detachmentThe class validates core burst cluster attachment/detachment operations and state management in Redshift's burst capacity.""" + " ".join(map(str, conversation_history)) 
 
     response = recursive_rag(query, vector_store, conversation_history, 5, query)
     #results = vector_store.max_marginal_relevance_search(query, k=150, fetch_k = 150000, lambda_mult = 0.75)

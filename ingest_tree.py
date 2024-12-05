@@ -5,44 +5,23 @@ import gc
 import logging
 import threading
 import time
-from llama_index.core import SimpleDirectoryReader
+from llama_index.core import SimpleDirectoryReader, Document
 from llama_index.core import VectorStoreIndex
 from llama_index.core import Settings
 from llama_index.core import StorageContext, load_index_from_storage
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.node_parser import CodeSplitter, SentenceSplitter
+from llama_index.core import TreeIndex
+from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
 import fnmatch
-import multiprocessing
-import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
-from collections import deque
-import boto3
-import json
-import os
-import gc
-import logging
-import threading
-from langchain_huggingface import HuggingFaceEmbeddings
-import time
-from langchain.text_splitter import Language
-from llama_index.core import SimpleDirectoryReader, Document
-from llama_index.core import Settings
-from llama_index.core import StorageContext, load_index_from_storage
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.core.node_parser import CodeSplitter, SentenceSplitter
-from llama_index.core import GPTTreeIndex, TreeIndex
-import uuid
-import fnmatch
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from functools import partial
 import multiprocessing
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 from collections import deque
 import queue
 from logging.handlers import QueueHandler, QueueListener
-import sys
 
+# Logging setup
 log_queue = queue.Queue(-1)
 queue_handler = QueueHandler(log_queue)
 logger = logging.getLogger()
@@ -56,6 +35,7 @@ stream_handler.setFormatter(formatter)
 listener = QueueListener(log_queue, stream_handler)
 listener.start()
 
+# Mapping file types to programming languages
 file_type_to_language = {
     ".cpp": "cpp", ".hpp": "cpp", ".go": "go", ".sql": "text", ".java": "java",
     ".json": "json", ".kt": "kotlin", ".ts": "ts", ".php": "php", ".py": "python",
@@ -66,7 +46,7 @@ file_type_to_language = {
     ".hs": "haskell", ".html": "text", ".orig": "text", ".txt": "text",
     ".mk": "text", ".res": "text",
     ".data": "text", ".component": "text", ".h": "cpp",
-    ".template" : "text"
+    ".template": "text"
 }
 
 def file_size_is_within_limit(file_path, max_size=10 * 1024 * 1024):
@@ -102,7 +82,7 @@ def process_single_document(doc, i, no_of_batches):
         chunks = text_splitter.split_text(content)
         
         with open("/home/deeepakb/Projects/bedrockTest/log.txt", "a") as f:
-            f.write(f"File Exists: {file_path}")
+            f.write(f"File Exists: {file_path}\n")
 
         return Document(
             text="\n\n".join([f"File Path: {file_path}\n\n{chunk}" for chunk in chunks]),
@@ -124,9 +104,9 @@ def ingest():
         except RuntimeError:
             pass 
 
-    s3 = boto3.client('s3')
-
-    Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-mpnet-base-v2")
+    # Use CodeBERT for embeddings
+    embed_model = HuggingFaceEmbedding(model_name="microsoft/codebert-base")
+    Settings.embed_model = embed_model
     Settings.llm = None
 
     reader = SimpleDirectoryReader(input_dir="/home/deeepakb/redshift-padb", recursive=True)
@@ -176,8 +156,8 @@ def ingest():
         batch_count += 1
 
     logger.info(f"Finished processing with skipped: {skip_count}, and not skipped: {not_skip_count}")
-    embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-mpnet-base-v2")
-    index = TreeIndex.from_documents(nodes, embed_model = embed_model, show_progress=True)
+    
+    index = TreeIndex.from_documents(nodes, embed_model=embed_model, show_progress=True)
 
     if index:
         index.storage_context.persist(persist_dir="/home/deeepakb/Projects/bedrockTest/tree_index")

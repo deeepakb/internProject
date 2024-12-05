@@ -7,10 +7,12 @@ import threading
 from langchain_huggingface import HuggingFaceEmbeddings
 import time
 import faiss
+from langchain_ollama import OllamaEmbeddings
 from langchain.text_splitter import Language  # Import Language enum for supported languages
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores import FAISS
 from llama_index.core import SimpleDirectoryReader
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from llama_index.core import Settings
 from llama_index.core import StorageContext, load_index_from_storage
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -54,12 +56,37 @@ file_type_to_language = {
     ".hs": "haskell", ".html": "text", ".orig": "text", ".txt": "text",
     ".mk": "text", ".res": "text",
     ".data": "text", ".component": "text", ".h": "cpp",
-    ".template" : "text"
+    ".template": "text"
 }
 
 def file_size_is_within_limit(file_path, max_size=12 * 1024 * 1024):  # 8 MB in bytes
     return os.path.getsize(file_path) <= max_size
 
+from langchain.text_splitter import TextSplitter
+
+class SQLSplitter(TextSplitter):
+    def __init__(self, chunk_size=2048, chunk_overlap=100):
+        super().__init__(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
+    def split_text(self, text: str) -> list:
+        # Split by semicolons, assuming SQL statements end with ';'
+        sql_statements = [stmt.strip() + ";" for stmt in text.split(";") if stmt.strip()]
+        chunks = []
+        current_chunk = []
+
+        for statement in sql_statements:
+            if sum(len(stmt) for stmt in current_chunk) + len(statement) <= self.chunk_size:
+                current_chunk.append(statement)
+            else:
+                chunks.append(" ".join(current_chunk))
+                current_chunk = [statement]
+
+        if current_chunk:
+            chunks.append(" ".join(current_chunk))
+
+        return chunks
+
+# Update your file processing logic to use SQLSplitter for .sql files
 def process_single_document(doc, i, no_of_batches):
     try:
         file_path = doc.metadata.get("file_path")
@@ -74,7 +101,9 @@ def process_single_document(doc, i, no_of_batches):
                 f.write(f"Skipping large file: {file_path}\n")
             return []
 
-        if file_type is not None and file_type.upper() in Language.__members__:
+        if file_type == "sql":
+            text_splitter = SQLSplitter(chunk_size=2048, chunk_overlap=100)
+        elif file_type is not None and file_type.upper() in Language.__members__:
             language = Language[file_type.upper()]
             text_splitter = RecursiveCharacterTextSplitter.from_language(
                 language=language, chunk_size=2048, chunk_overlap=100
@@ -84,12 +113,13 @@ def process_single_document(doc, i, no_of_batches):
         else:
             with open("/home/deeepakb/Projects/bedrockTest/log.txt", "a") as f:
                 f.write(f"Skipping Unknown file: {file_path}\n")
+            return []
 
         content = doc.get_content()
         chunks = text_splitter.split_text(content)
         
         with open("/home/deeepakb/Projects/bedrockTest/log.txt", "a") as f:
-                f.write(f"File Exists: {file_path}")
+            f.write(f"File Exists: {file_path}")
 
         return [
             {
@@ -103,16 +133,17 @@ def process_single_document(doc, i, no_of_batches):
         logger.exception(e)
         return []
 
-
 def ingest():
     no_of_batches = 0
     os.environ["PYTHONMALLOC"] = "malloc"
     multiprocessing.set_start_method('spawn')
     s3 = boto3.client('s3')
 
-    Settings.embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2",
-                                                 model_kwargs={'device': "cpu"},
-                                                 encode_kwargs={"batch_size": 16384})
+    # Use CodeBERT for code-specific embeddings
+    embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2",
+                                        model_kwargs={'device': "cpu"},
+                                        encode_kwargs={"batch_size": 131072})
+    Settings.embed_model = embed_model
     Settings.llm = None
 
     reader = SimpleDirectoryReader(input_dir="/home/deeepakb/redshift-padb", recursive=True)
@@ -164,12 +195,19 @@ def ingest():
 
     logger.info(f"Finished processing with skipped: {skip_count}, and not skipped: {not_skip_count}")
 
+    # Initialize FAISS vector store using CodeBERT embeddings
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2",
                                        model_kwargs={'device': "cpu"},
                                        encode_kwargs={"batch_size": 131072})
-    
-    dimension = len(embeddings.embed_query("hello world"))
-    index = faiss.IndexHNSWFlat(dimension, 128)
+
+    dimension = len(embeddings.embed_query("hello world"))  # Code-specific example
+
+    index = faiss.IndexHNSWFlat(dimension,  256)
+    index.hnsw.efConstruction = 320  # Set this to a higher value for more accurate indexing
+
+    # Set efSearch (affects search phase)
+    index.hnsw.efSearch = 256  # Set this based on desired search quality (higher = more accurate)
+
     vector_store = FAISS(
         embedding_function=embeddings,
         index=index,
@@ -194,7 +232,7 @@ def ingest():
 
     end_time = time.time()
     logger.info(f"Time taken to add all texts: {end_time - start_time} seconds")
-    vector_store.save_local("/home/deeepakb/Projects/bedrockTest/faiss_index_final")
+    vector_store.save_local("/home/deeepakb/Projects/bedrockTest/faiss_index_final_improved")
 
 if __name__ == "__main__":
     try:

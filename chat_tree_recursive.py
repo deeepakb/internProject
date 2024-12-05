@@ -11,7 +11,7 @@ from llama_index.core import Settings
 import sys
 
 
-sys.setrecursionlimit(5000)
+sys.setrecursionlimit(50000)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
@@ -45,7 +45,7 @@ def recursive_rag(query, retriever, conversation_history, iterations=3, original
         return None
 
     # Ignore
-    unique_nodes = OrderedDict((node.text, node) for node in retrieved_nodes if "def test_classic_resize_mode_flag" not in node.text)
+    unique_nodes = OrderedDict((node.text, node) for node in retrieved_nodes if "def test_empty_storage_oid_batched_grafting" not in node.text)
     #print(retrieved_nodes[0].metadata.get("file_path"))
     retrieved_snippets = "\n".join(unique_nodes.keys())
 
@@ -121,13 +121,13 @@ def chat():
     retriever = TreeSelectLeafEmbeddingRetriever(
         index=index,
         embed_model=embed_model,
-        child_branch_factor=40
+        child_branch_factor=50
     )
 
     query_time = time.time()
-    query = """Based on this summary for the def test_classic_resize_mode_flag, Generate the python code for it: Based on the code files, here's a precise explanation of test_classic_resize_mode_flag:Key Components:1. Test Purpose:- Validates classic resize mode functionality during cluster resizing operations- Ensures proper cluster initialization and configuration2. Main Test Flow:```pythondef test_classic_resize_mode_flag(self, cluster_session, db_session, cluster, topology_tagging):  # Validate initial state  self.validate_first_sb_version()    # Check topology version before resize  topology_file_version_before_resize = s3_helpers.get_local_topology_file_version()    # Perform resize operation  start_sim_db(classic_resize=True, node_count=TARGET_CLUSTER_SIZE)    # Validate post-resize state  self.validate_slice_count(db_session, TARGET_CLUSTER_TOTAL_SLICES)    # Verify topology version changes  if topology_tagging:  assert ((topology_file_version_after_resize - topology_file_version_before_resize) >= 1000)```3. Key Validations:- Bootstrap messages for classic resize mode- Virgin cluster start verification- Dev_db table cleanup- Superblock version = 1- Topology file version increment- Slice count validation.""" + " ".join(map(str, conversation_history))
+    query = """What does stability.sql.""" + " ".join(map(str, conversation_history))
 
-    response = recursive_rag(query, retriever, conversation_history, 3, query)
+    response = recursive_rag(query, retriever, conversation_history, 4, query)
     print(response)
     print(f"\nIt took {time.time() - index_start_time} to run the whole program")
 
