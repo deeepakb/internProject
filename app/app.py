@@ -134,7 +134,7 @@ embeddings = HuggingFaceEmbeddings(
     model_kwargs={'device': "cpu"},
     encode_kwargs={"batch_size": 131072}
 )
-index_path = "/home/deeepakb/Projects/bedrockTest/faiss_index_final_improved"
+index_path = "/home/deeepakb/Projects/bedrockTest/indices/faiss_index_final_improved_4"
 vector_store = FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
 logger.info("FAISS index loaded successfully.")
 
@@ -148,7 +148,7 @@ def chat():
     try:
         user_query = request.json.get("query", "")
         conversation_history = load_conversation_history()
-        response = recursive_rag(user_query, vector_store, conversation_history, 5, user_query)
+        response = recursive_rag(user_query, vector_store, conversation_history, 4, user_query)
         return jsonify({"response": response})
     except Exception as e:
         logger.error(f"Error during chat processing: {e}")

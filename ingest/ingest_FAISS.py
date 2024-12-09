@@ -202,11 +202,11 @@ def ingest():
 
     dimension = len(embeddings.embed_query("hello world"))  # Code-specific example
 
-    index = faiss.IndexHNSWFlat(dimension,  512)
-    index.hnsw.efConstruction = 2048  # Set this to a higher value for more accurate indexing
+    index = faiss.IndexHNSWFlat(dimension,  4096)
+    index.hnsw.efConstruction = 16384   # Set this to a higher value for more accurate indexing
 
     # Set efSearch (affects search phase)
-    index.hnsw.efSearch = 1024  # Set this based on desired search quality (higher = more accurate)
+    index.hnsw.efSearch = 8192  # Set this based on desired search quality (higher = more accurate)
 
     vector_store = FAISS(
         embedding_function=embeddings,
@@ -232,7 +232,7 @@ def ingest():
 
     end_time = time.time()
     logger.info(f"Time taken to add all texts: {end_time - start_time} seconds")
-    vector_store.save_local("/home/deeepakb/Projects/bedrockTest/faiss_index_final_improved_2")
+    vector_store.save_local("/home/deeepakb/Projects/bedrockTest/faiss_index_final_improved_4")
 
 if __name__ == "__main__":
     try:

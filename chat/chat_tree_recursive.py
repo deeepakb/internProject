@@ -45,7 +45,7 @@ def recursive_rag(query, retriever, conversation_history, iterations=3, original
         return None
 
     # Ignore
-    unique_nodes = OrderedDict((node.text, node) for node in retrieved_nodes if "def test_empty_storage_oid_batched_grafting" not in node.text)
+    unique_nodes = OrderedDict((node.text, node) for node in retrieved_nodes if "def test_add_column" not in node.text)
     #print(retrieved_nodes[0].metadata.get("file_path"))
     retrieved_snippets = "\n".join(unique_nodes.keys())
 
@@ -125,7 +125,7 @@ def chat():
     )
 
     query_time = time.time()
-    query = """What does stability.sql.""" + " ".join(map(str, conversation_history))
+    query = """Based on this description generate the python code for def test_add_column : The test_add_column method in TestBARAddColumn class appears to test:1. SQL statement execution:- Tests ALTER TABLE ADD COLUMN statements with different data types and default values- Verifies proper quoting and escaping in column names and default values2. Transaction management:- Checks transaction creation and handling- Verifies proper commit/rollback behavior3. Table state tracking:- Validates state changes in catalog- Verifies memory state updates- Tests synchronization state transitions4. Error handling:- Tests failed column additions- Verifies error reporting- Checks proper cleanup on failuresThe test uses mock objects to isolate and verify these behaviors during backup and restore operations.""" + " ".join(map(str, conversation_history))
 
     response = recursive_rag(query, retriever, conversation_history, 4, query)
     print(response)

@@ -70,7 +70,7 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
         #ignore
         #if chunk.metadata.get("file_path") == "/home/deeepakb/redshift-padb/test/raff/ddm/testfiles/lf_alp/test_lf_alp_explain_hidden.sql":
             #continue
-        if "class TestAttachBurstCluster" in chunk.page_content:
+        if "def test_empty_storage_oid_batched_grafting" in chunk.page_content:
             continue
 
         full_content += f"File: {os.path.basename(chunk.metadata.get('file_path', 'Unknown'))}\n"
@@ -104,10 +104,10 @@ def recursive_rag(query, vector_store, conversation_history, iterations=3, origi
         "body": json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 550,
-            "top_k": 10,
+            "top_k": 9,
             "stop_sequences": [],
-            "temperature": 0.3,
-            "top_p": 0.95,
+            "temperature": 0.25,
+            "top_p": 0.9,
             "messages": messages
         })
     }
@@ -140,7 +140,7 @@ def chat():
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2",
                                        model_kwargs={'device': "cpu"},
                                        encode_kwargs={"batch_size": 131072})
-    index_path = "/home/deeepakb/Projects/bedrockTest/faiss_index_final_improved_2"
+    index_path = "/home/deeepakb/Projects/bedrockTest/indices/faiss_index_final_improved_4"
 
     try:
         index_start_time = time.time()
@@ -151,9 +151,9 @@ def chat():
         return
 
 
-    query = """Explain the stability.sql file.""" + " ".join(map(str, conversation_history)) 
+    query = """Based on this description, generate the python code for def test_empty_storage_oid_batched_grafting: Based on the code snippets shown, `test_empty_storage_oid_batched_grafting` appears to be a test that verifies:1. Block header and replica management during grafting operations with empty storage OIDs2. GUID cache behavior and validation when handling empty storage blocks3. Proper handling of block states (permanent vs temporary) during batched graftingThe test likely uses utilities like:- `Block_hdr` for managing block headers and replicas - `GuidCache` for tracking block GUIDs- `StorageOidEntry` for storage OID managementThe test ensures proper handling of empty storage OIDs during batched grafting operations while maintaining data consistency and replica management. It appears to be part of the storage layer test suite, focused on validating grafting functionality used during operations like restore or resize..""" + " ".join(map(str, conversation_history)) 
 
-    response = recursive_rag(query, vector_store, conversation_history, 5, query)
+    response = recursive_rag(query, vector_store, conversation_history, 4, query)
     #results = vector_store.max_marginal_relevance_search(query, k=150, fetch_k = 150000, lambda_mult = 0.75)
     print(response)
     print(f"\n It took {time.time() - index_start_time} to run the whole program")

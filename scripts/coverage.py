@@ -78,7 +78,7 @@ def check_vector_store_coverage(vector_store, codebase_files):
 
 def main():
     codebase_path = "/home/deeepakb/redshift-padb"
-    index_path = "/home/deeepakb/Projects/bedrockTest/faiss_index_final_improved_2"
+    index_path = "/home/deeepakb/Projects/bedrockTest/faiss_index_final_improved_4"
 
     # Load FAISS index
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2", 
